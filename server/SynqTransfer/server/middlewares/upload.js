@@ -1,5 +1,5 @@
 const AWS = require("aws-sdk");
-const Busboy = require("busboy");
+const busboy = require("busboy");
 const fs = require("fs");
 const path = require("path");
 
@@ -15,7 +15,6 @@ const manualStreamUpload = (req, res, next) => {
   const TWO_GB = 2 * 1024 * 1024 * 1024;
 
   if (contentLength <= TWO_GB) {
-    // fallback to multer
     const multer = require("multer");
     const storage = multer.diskStorage({
       destination: (req, file, cb) => cb(null, "uploads/"),
@@ -26,10 +25,10 @@ const manualStreamUpload = (req, res, next) => {
 
   console.log("🚀 Using streaming upload for S3");
 
-  const busboy = new Busboy({ headers: req.headers });
+  const bb = busboy({ headers: req.headers });
   const files = [];
 
-  busboy.on("file", (fieldname, file, filename) => {
+  bb.on("file", (fieldname, file, filename) => {
     const key = `${Date.now()}-${filename}`;
     const uploadStream = s3.upload({
       Bucket: process.env.S3_BUCKET,
@@ -42,19 +41,19 @@ const manualStreamUpload = (req, res, next) => {
       originalname: filename,
       key,
       location: `s3://${process.env.S3_BUCKET}/${key}`,
-      size: 0, // will be populated by headObject
+      size: 0,
       isS3: true,
     };
 
     files.push(uploadStream.then(() => fileData));
   });
 
-  busboy.on("field", (fieldname, val) => {
+  bb.on("field", (fieldname, val) => {
     req.body = req.body || {};
     req.body[fieldname] = val;
   });
 
-  busboy.on("finish", async () => {
+  bb.on("finish", async () => {
     try {
       const uploaded = await Promise.all(files);
       req.files = uploaded;
@@ -77,7 +76,7 @@ const manualStreamUpload = (req, res, next) => {
     }
   });
 
-  req.pipe(busboy);
+  req.pipe(bb);
 };
 
 module.exports = manualStreamUpload;
