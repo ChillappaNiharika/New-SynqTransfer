@@ -1,9 +1,8 @@
-const multer = require("multer");
-const path = require("path");
 const AWS = require("aws-sdk");
-const multerS3 = require("multer-s3");
+const Busboy = require("busboy");
+const fs = require("fs");
+const path = require("path");
 
-// Configure AWS
 AWS.config.update({
   accessKeyId: process.env.AWS_KEY,
   secretAccessKey: process.env.AWS_SECRET,
@@ -11,56 +10,74 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
-// Disk Storage (for ≤ 2GB)
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-
-// S3 Storage (for > 2GB)
-const s3Storage = multerS3({
-  s3,
-  bucket: process.env.S3_BUCKET,
-  contentType: multerS3.AUTO_CONTENT_TYPE,
-  key: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-
-// Middleware to decide based on Content-Length
-const dynamicUpload = (req, res, next) => {
-  const contentLength = parseInt(req.headers["content-length"]);
-    console.log(`🟨 Incoming request with Content-Length: ${contentLength}`);
+const manualStreamUpload = (req, res, next) => {
+  const contentLength = parseInt(req.headers["content-length"] || "0");
   const TWO_GB = 2 * 1024 * 1024 * 1024;
-console.log("📦 Upload target:", contentLength > TWO_GB ? "AWS S3" : "Local disk");
-  const usingS3 = contentLength > TWO_GB;
-  console.log(`📦 Upload target: ${usingS3 ? "AWS S3" : "Local Disk"}`);
 
-  const storage = usingS3 ? s3Storage : diskStorage;
+  if (contentLength <= TWO_GB) {
+    // fallback to multer
+    const multer = require("multer");
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => cb(null, "uploads/"),
+      filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+    });
+    return multer({ storage }).array("files")(req, res, next);
+  }
 
-  const upload = multer({
-    storage,
-    limits: {
-      files: 500,
-      fileSize: 20 * 1024 * 1024 * 1024, // 20GB max per file
-    },
-  }).array("files", 500);
+  console.log("🚀 Using streaming upload for S3");
 
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      console.error("❌ Multer error:", err);
-      return res.status(400).json({ error: err.message });
-    } else if (err) {
-      console.error("❌ General upload error:", err);
-      return res.status(500).json({ error: "File upload failed." });
-    }
-    console.log("✅ Files successfully uploaded:", req.files?.map(f => f.originalname));
-    next();
+  const busboy = new Busboy({ headers: req.headers });
+  const files = [];
+
+  busboy.on("file", (fieldname, file, filename) => {
+    const key = `${Date.now()}-${filename}`;
+    const uploadStream = s3.upload({
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
+      Body: file,
+      ContentType: req.headers['content-type'],
+    }).promise();
+
+    const fileData = {
+      originalname: filename,
+      key,
+      location: `s3://${process.env.S3_BUCKET}/${key}`,
+      size: 0, // will be populated by headObject
+      isS3: true,
+    };
+
+    files.push(uploadStream.then(() => fileData));
   });
+
+  busboy.on("field", (fieldname, val) => {
+    req.body = req.body || {};
+    req.body[fieldname] = val;
+  });
+
+  busboy.on("finish", async () => {
+    try {
+      const uploaded = await Promise.all(files);
+      req.files = uploaded;
+
+      // fetch actual sizes from S3
+      await Promise.all(
+        req.files.map(async (file) => {
+          const head = await s3.headObject({
+            Bucket: process.env.S3_BUCKET,
+            Key: file.key,
+          }).promise();
+          file.size = head.ContentLength;
+        })
+      );
+
+      next();
+    } catch (err) {
+      console.error("❌ S3 Upload Error:", err);
+      return res.status(500).json({ error: "Failed to upload to S3" });
+    }
+  });
+
+  req.pipe(busboy);
 };
 
-module.exports = dynamicUpload;
+module.exports = manualStreamUpload;

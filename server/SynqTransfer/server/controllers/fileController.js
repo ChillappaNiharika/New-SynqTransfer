@@ -10,14 +10,16 @@ const s3 = new AWS.S3();
 
 exports.upload = async (req, res) => {
   const { toEmail, fromEmail, title, message, option } = req.body;
-  const files = req.files;
+
+  // Either multer or manual streaming sets these:
+  const files = req.files || req.s3UploadedFiles;
 
   console.log(`📨 Upload Request From: ${fromEmail} To: ${toEmail}`);
   console.log(`📁 Total files received: ${files.length}`);
   console.log("📂 Files Metadata:", files.map(f => ({
     name: f.originalname,
     size: f.size,
-    storage: f.location ? "S3" : "Local"
+    storage: f.isS3 ? "S3" : "Local"
   })));
 
   if (!files || files.length === 0)
@@ -26,7 +28,9 @@ exports.upload = async (req, res) => {
   try {
     let fileRecord;
 
-    if (!files[0].location) {
+    const isS3 = files[0].isS3;
+
+    if (!isS3) {
       console.log("🗜️ Zipping files locally...");
 
       const zipName = `bundle-${Date.now()}.zip`;
@@ -90,29 +94,5 @@ exports.upload = async (req, res) => {
   } catch (err) {
     console.error("❌ Upload error:", err);
     res.status(500).json({ error: "Something went wrong during upload." });
-  }
-};
-
-exports.download = async (req, res) => {
-  try {
-    const file = await fileService.getFileByUUID(req.params.uuid);
-    if (!file) return res.status(404).json({ error: "File not found or expired." });
-
-    if (file.isS3) {
-      const stream = s3
-        .getObject({
-          Bucket: process.env.S3_BUCKET,
-          Key: file.path,
-        })
-        .createReadStream();
-
-      res.attachment(file.filename);
-      stream.pipe(res);
-    } else {
-      res.download(file.path, file.filename);
-    }
-  } catch (err) {
-    console.error("Download error:", err);
-    res.status(500).json({ error: "Download failed." });
   }
 };
