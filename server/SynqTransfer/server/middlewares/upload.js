@@ -36,7 +36,12 @@ const dynamicUpload = (req, res, next) => {
   const contentLength = parseInt(req.headers["content-length"]);
   const TWO_GB = 2 * 1024 * 1024 * 1024;
 
-  const storage = contentLength > TWO_GB ? s3Storage : diskStorage;
+  console.log(`🟨 Incoming request with Content-Length: ${contentLength}`);
+
+  const usingS3 = contentLength > TWO_GB;
+  console.log(`📦 Upload target: ${usingS3 ? "AWS S3" : "Local Disk"}`);
+
+  const storage = usingS3 ? s3Storage : diskStorage;
 
   const upload = multer({
     storage,
@@ -48,10 +53,13 @@ const dynamicUpload = (req, res, next) => {
 
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
+      console.error("❌ Multer error:", err);
       return res.status(400).json({ error: err.message });
     } else if (err) {
+      console.error("❌ General upload error:", err);
       return res.status(500).json({ error: "File upload failed." });
     }
+    console.log("✅ Files successfully uploaded:", req.files?.map(f => f.originalname));
     next();
   });
 };

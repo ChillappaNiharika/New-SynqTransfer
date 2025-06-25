@@ -12,13 +12,23 @@ exports.upload = async (req, res) => {
   const { toEmail, fromEmail, title, message, option } = req.body;
   const files = req.files;
 
+  console.log(`📨 Upload Request From: ${fromEmail} To: ${toEmail}`);
+  console.log(`📁 Total files received: ${files.length}`);
+  console.log("📂 Files Metadata:", files.map(f => ({
+    name: f.originalname,
+    size: f.size,
+    storage: f.location ? "S3" : "Local"
+  })));
+
   if (!files || files.length === 0)
     return res.status(400).json({ error: "No files uploaded." });
 
   try {
-    // If local files, zip them
     let fileRecord;
-    if (!req.files[0].location) {
+
+    if (!files[0].location) {
+      console.log("🗜️ Zipping files locally...");
+
       const zipName = `bundle-${Date.now()}.zip`;
       const zipPath = path.join("uploads", zipName);
       const output = fs.createWriteStream(zipPath);
@@ -28,7 +38,10 @@ exports.upload = async (req, res) => {
       files.forEach((file) => {
         archive.file(file.path, { name: file.originalname });
       });
+
       await archive.finalize();
+
+      console.log("📦 ZIP created:", zipName, "Size:", fs.statSync(zipPath).size);
 
       const zipFile = {
         filename: zipName,
@@ -38,7 +51,8 @@ exports.upload = async (req, res) => {
       };
       fileRecord = await fileService.saveFile(zipFile);
     } else {
-      // S3 file
+      console.log("☁️ S3 Upload completed for:", files[0].key);
+
       const s3File = {
         filename: files[0].originalname,
         path: files[0].key,
@@ -52,6 +66,8 @@ exports.upload = async (req, res) => {
     const fullLink = `${baseUrl}/api/files/${fileRecord.uuid}`;
     const shortLink = await createShortLink(fullLink, req);
 
+    console.log("🔗 Short link generated:", shortLink);
+
     if (option === "email") {
       await emailService.sendFileEmail({
         to: toEmail,
@@ -60,6 +76,7 @@ exports.upload = async (req, res) => {
         message,
         link: shortLink,
       });
+      console.log("📧 Email sent to:", toEmail);
     }
 
     await emailService.sendConfirmationEmail({
@@ -67,10 +84,11 @@ exports.upload = async (req, res) => {
       title,
       link: shortLink,
     });
+    console.log("📨 Confirmation email sent to:", fromEmail);
 
     res.json({ message: "Link generated.", file: shortLink });
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("❌ Upload error:", err);
     res.status(500).json({ error: "Something went wrong during upload." });
   }
 };
