@@ -9,6 +9,6 @@ const router = express.Router();
 // const upload = multer({ storage });
 
 router.post("/upload", uploadMiddleware, fileController.upload);
-router.get("/:uuid", fileController.download);
+// router.get("/:uuid", fileController.download);
 
 module.exports = router;
