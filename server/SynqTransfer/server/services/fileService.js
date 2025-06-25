@@ -9,6 +9,7 @@ exports.saveFile = async (file) => {
     uuid: uuidv4(),
     path: file.path,
     size: file.size,
+    isS3: file.isS3 || false,
     createdAt: Date.now(),
     expiresAt,
   });
