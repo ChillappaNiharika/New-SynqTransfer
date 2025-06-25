@@ -34,10 +34,9 @@ const s3Storage = multerS3({
 // Middleware to decide based on Content-Length
 const dynamicUpload = (req, res, next) => {
   const contentLength = parseInt(req.headers["content-length"]);
+    console.log(`🟨 Incoming request with Content-Length: ${contentLength}`);
   const TWO_GB = 2 * 1024 * 1024 * 1024;
-
-  console.log(`🟨 Incoming request with Content-Length: ${contentLength}`);
-
+console.log("📦 Upload target:", contentLength > TWO_GB ? "AWS S3" : "Local disk");
   const usingS3 = contentLength > TWO_GB;
   console.log(`📦 Upload target: ${usingS3 ? "AWS S3" : "Local Disk"}`);
 

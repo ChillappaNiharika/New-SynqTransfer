@@ -41,6 +41,7 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
     setLoading(true);
     const res = await axios.post(API_ENDPOINTS.UPLOADFILE, formData, {
       headers: { "Content-Type": "multipart/form-data" },
+       timeout: 0,
       onUploadProgress: (progressEvent) => {
             const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setProgress(percent);
