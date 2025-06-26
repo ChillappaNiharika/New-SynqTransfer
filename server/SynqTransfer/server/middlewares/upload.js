@@ -4,6 +4,7 @@ const busboy = require("busboy");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+const { PassThrough } = require("stream");
 
 AWS.config.update({
   accessKeyId: process.env.AWS_KEY,
@@ -54,75 +55,98 @@ const manualStreamUpload = (req, res, next) => {
   const io = req.app.get("io");
   let uploadedSize = 0;
 
-  bb.on("file", (fieldname, file, fileInfo) => {
-  const filename = typeof fileInfo === "string" ? fileInfo : (fileInfo?.filename || fileInfo?.name || "unknown");
-    console.log("📤 Streaming file to S3:", filename);
-    const key = `${Date.now()}-${filename}`;
+  bb.on("file", async (fieldname, file, fileInfo) => {
+  const filename = fileInfo.filename || "unnamed";
+  const key = `${Date.now()}-${filename}`;
+  const partSize = 10 * 1024 * 1024; // 10MB per part
+  let partNumber = 1;
+  let uploadedSize = 0;
+  let buffer = Buffer.alloc(0);
+  const parts = [];
 
-    const uploadStream = s3.upload({
+  console.log(`📤 Starting multipart upload for: ${filename}`);
+
+  try {
+    // Step 1: Initiate multipart upload
+    const multipart = await s3.createMultipartUpload({
       Bucket: process.env.S3_BUCKET,
       Key: key,
-      Body: file,
       ContentType: req.headers['content-type'],
+    }).promise();
+
+    const uploadId = multipart.UploadId;
+    console.log(`🆔 Multipart Upload ID: ${uploadId}`);
+
+    // Step 2: Upload parts manually as stream
+    file.on("data", async (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
+      uploadedSize += chunk.length;
+
+      if (buffer.length >= partSize) {
+        file.pause();
+
+        const partBuffer = buffer.slice(0, partSize);
+        buffer = buffer.slice(partSize);
+
+        console.log(`⬆️ Uploading part ${partNumber} (${partBuffer.length} bytes)`);
+
+        const uploadedPart = await s3.uploadPart({
+          Bucket: process.env.S3_BUCKET,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: partBuffer,
+        }).promise();
+
+        parts.push({ ETag: uploadedPart.ETag, PartNumber: partNumber });
+        console.log(`✅ Part ${partNumber} uploaded`);
+
+        partNumber++;
+        file.resume();
+      }
     });
 
-    const fileData = {
-      originalname: filename,
-      key,
-      location: `s3://${process.env.S3_BUCKET}/${key}`,
-      size: 0,
-      isS3: true,
-    };
+    file.on("end", async () => {
+      if (buffer.length > 0) {
+        console.log(`⬆️ Uploading final part ${partNumber} (${buffer.length} bytes)`);
 
-    const managedUpload = uploadStream
-  .on("httpUploadProgress", (progress) => {
-    const percent = progress.total
-      ? Math.round((progress.loaded / progress.total) * 100)
-      : Math.min(100, Math.round((progress.loaded / contentLength) * 100));
-    console.log(`📈 Progress for ${filename}: ${percent}%`);
-    io.emit("upload-progress", { filename, percent });
-  })
-  .promise()
-  .catch((err) => {
-    console.error(`❌ Upload failed for ${filename}:`, err);
-    throw err; // rethrow to be caught in bb.on("finish")
-  });
+        const finalPart = await s3.uploadPart({
+          Bucket: process.env.S3_BUCKET,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: buffer,
+        }).promise();
 
-files.push(managedUpload.then(() => fileData));
-  });
+        parts.push({ ETag: finalPart.ETag, PartNumber: partNumber });
+        console.log(`✅ Final part ${partNumber} uploaded`);
+      }
 
-  bb.on("field", (fieldname, val) => {
-    console.log(`📝 Form field received: ${fieldname} = ${val}`);
-    req.body = req.body || {};
-    req.body[fieldname] = val;
-  });
-
-  bb.on("finish", async () => {
-    try {
-  const uploaded = await Promise.all(files);
-  req.files = uploaded;
-
-  await Promise.all(
-    req.files.map(async (file) => {
-      const head = await s3.headObject({
+      // Step 3: Complete upload
+      await s3.completeMultipartUpload({
         Bucket: process.env.S3_BUCKET,
-        Key: file.key,
+        Key: key,
+        UploadId: uploadId,
+        MultipartUpload: { Parts: parts },
       }).promise();
-      file.size = head.ContentLength;
-    })
-  );
 
-  io.emit("upload-complete", { message: "Upload completed." });
+      console.log(`🎉 Multipart upload complete for: ${filename}`);
 
-  console.log("✅ Upload finished. Passing control to controller...");
-  next(); // only go to fileController.upload after all done
+      req.files = req.files || [];
+      req.files.push({
+        originalname: filename,
+        key,
+        location: `s3://${process.env.S3_BUCKET}/${key}`,
+        size: uploadedSize,
+        isS3: true,
+      });
+    });
 
-} catch (err) {
-  console.error("❌ S3 Upload Error:", err);
-  io.emit("upload-error", { error: "Upload failed." });
-  return res.status(500).json({ error: "Failed to upload to S3" });
-}
-  });
+  } catch (err) {
+    console.error("❌ Error in multipart upload:", err);
+    return res.status(500).json({ error: "Multipart upload failed" });
+  }
+});
 
   bb.on("error", (err) => {
   console.error("❌ Busboy error:", err);
