@@ -14,6 +14,11 @@ const path = require('path');
 
 mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected"));
 
+console.log("🔧 Environment Config:");
+console.log("MONGO_URI:", process.env.MONGO_URI);
+console.log("S3_BUCKET:", process.env.S3_BUCKET);
+console.log("APP_BASE_URL:", process.env.APP_BASE_URL);
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {

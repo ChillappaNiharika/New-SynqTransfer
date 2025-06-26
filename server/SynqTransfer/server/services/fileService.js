@@ -13,6 +13,12 @@ exports.saveFile = async (file) => {
     createdAt: Date.now(),
     expiresAt,
   });
+  console.log("💾 Saving file record to DB:", {
+  filename: file.filename,
+  path: file.path,
+  size: file.size,
+  isS3: file.isS3
+});
   return dbFile.save();
 };
 

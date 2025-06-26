@@ -1,7 +1,8 @@
-// upload.js
+// middlewares/upload.js
 const AWS = require("aws-sdk");
 const busboy = require("busboy");
 const fs = require("fs");
+const multer = require("multer");
 const path = require("path");
 
 AWS.config.update({
@@ -15,25 +16,47 @@ const manualStreamUpload = (req, res, next) => {
   const contentLength = parseInt(req.headers["content-length"] || "0");
   const TWO_GB = 2 * 1024 * 1024 * 1024;
 
+  // ✅ MULTER path (under 2GB)
   if (contentLength <= TWO_GB) {
-    const multer = require("multer");
+    console.log("📦 Using Multer for upload (content-length <= 2GB)");
+
     const storage = multer.diskStorage({
-      destination: (req, file, cb) => cb(null, "uploads/"),
+      destination: (req, file, cb) => {
+        console.log(`📁 Storing to /uploads/ as ${file.originalname}`);
+        cb(null, "uploads/");
+      },
       filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
     });
-    return multer({ storage }).array("files")(req, res, next);
+
+    const upload = multer({ storage }).array("files");
+
+    return upload(req, res, (err) => {
+      if (err) {
+        console.error("❌ Multer error:", err);
+        return res.status(500).json({ error: "Failed to upload using Multer." });
+      }
+      if (!req.files || req.files.length === 0) {
+        console.warn("⚠️ No files received via Multer");
+        return res.status(400).json({ error: "No files uploaded." });
+      }
+
+      console.log(`✅ Multer received ${req.files.length} files`);
+      next();
+    });
   }
 
-  console.log("🚀 Using streaming upload for S3");
+  // ✅ S3 streaming path (above 2GB)
+  console.log("☁️ Using S3 streaming upload via Busboy");
 
   const bb = busboy({ headers: req.headers });
   const files = [];
   const io = req.app.get("io");
-  let totalSize = 0;
   let uploadedSize = 0;
 
   bb.on("file", (fieldname, file, filename) => {
+    console.log("📤 Streaming file to S3:", filename);
     const key = `${Date.now()}-${filename}`;
+
     const uploadStream = s3.upload({
       Bucket: process.env.S3_BUCKET,
       Key: key,
@@ -52,6 +75,7 @@ const manualStreamUpload = (req, res, next) => {
     const managedUpload = uploadStream.on("httpUploadProgress", (progress) => {
       uploadedSize += progress.loaded;
       const percent = Math.round((uploadedSize / contentLength) * 100);
+      console.log(`📈 Progress for ${filename}: ${percent}%`);
       io.emit("upload-progress", { filename, percent });
     }).promise();
 
@@ -59,6 +83,7 @@ const manualStreamUpload = (req, res, next) => {
   });
 
   bb.on("field", (fieldname, val) => {
+    console.log(`📝 Form field received: ${fieldname} = ${val}`);
     req.body = req.body || {};
     req.body[fieldname] = val;
   });
@@ -68,7 +93,12 @@ const manualStreamUpload = (req, res, next) => {
       const uploaded = await Promise.all(files);
       req.files = uploaded;
 
-      // fetch actual sizes from S3
+      if (!uploaded || uploaded.length === 0) {
+        console.warn("⚠️ No files uploaded via S3/Busboy");
+        return res.status(400).json({ error: "No files uploaded via S3." });
+      }
+
+      // Fetch actual size
       await Promise.all(
         req.files.map(async (file) => {
           const head = await s3.headObject({
@@ -79,14 +109,20 @@ const manualStreamUpload = (req, res, next) => {
         })
       );
 
+      console.log("✅ All files uploaded to S3 successfully");
       io.emit("upload-complete", { message: "Upload completed." });
 
       next();
     } catch (err) {
-      console.error("❌ S3 Upload Error:", err);
+      console.error("❌ Error during S3 upload processing:", err);
       io.emit("upload-error", { error: "Upload failed." });
       return res.status(500).json({ error: "Failed to upload to S3" });
     }
+  });
+
+  bb.on("error", (err) => {
+    console.error("❌ Busboy error:", err);
+    return res.status(500).json({ error: "Streaming parser error" });
   });
 
   io.emit("upload-start", { message: "Upload started." });

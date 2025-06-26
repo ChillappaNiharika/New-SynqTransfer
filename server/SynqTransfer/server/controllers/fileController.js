@@ -15,6 +15,11 @@ exports.upload = async (req, res) => {
   // Either multer or manual streaming sets these:
   const files = req.files || req.s3UploadedFiles;
 
+  if (!files || files.length === 0) {
+      console.warn("⚠️ No files found in request");
+      return res.status(400).json({ error: "No files uploaded." });
+    }
+
   console.log(`📨 Upload Request From: ${fromEmail} To: ${toEmail}`);
   console.log(`📁 Total files received: ${files.length}`);
   console.log("📂 Files Metadata:", files.map(f => ({
