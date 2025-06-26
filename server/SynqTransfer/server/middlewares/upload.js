@@ -53,7 +53,8 @@ const manualStreamUpload = (req, res, next) => {
   const io = req.app.get("io");
   let uploadedSize = 0;
 
-  bb.on("file", (fieldname, file, filename) => {
+  bb.on("file", (fieldname, file, fileInfo) => {
+  const filename = typeof fileInfo === "string" ? fileInfo : (fileInfo?.filename || fileInfo?.name || "unknown");
     console.log("📤 Streaming file to S3:", filename);
     const key = `${Date.now()}-${filename}`;
 
@@ -90,34 +91,29 @@ const manualStreamUpload = (req, res, next) => {
 
   bb.on("finish", async () => {
     try {
-      const uploaded = await Promise.all(files);
-      req.files = uploaded;
+  const uploaded = await Promise.all(files);
+  req.files = uploaded;
 
-      if (!uploaded || uploaded.length === 0) {
-        console.warn("⚠️ No files uploaded via S3/Busboy");
-        return res.status(400).json({ error: "No files uploaded via S3." });
-      }
+  await Promise.all(
+    req.files.map(async (file) => {
+      const head = await s3.headObject({
+        Bucket: process.env.S3_BUCKET,
+        Key: file.key,
+      }).promise();
+      file.size = head.ContentLength;
+    })
+  );
 
-      // Fetch actual size
-      await Promise.all(
-        req.files.map(async (file) => {
-          const head = await s3.headObject({
-            Bucket: process.env.S3_BUCKET,
-            Key: file.key,
-          }).promise();
-          file.size = head.ContentLength;
-        })
-      );
+  io.emit("upload-complete", { message: "Upload completed." });
 
-      console.log("✅ All files uploaded to S3 successfully");
-      io.emit("upload-complete", { message: "Upload completed." });
+  console.log("✅ Upload finished. Passing control to controller...");
+  next(); // only go to fileController.upload after all done
 
-      next();
-    } catch (err) {
-      console.error("❌ Error during S3 upload processing:", err);
-      io.emit("upload-error", { error: "Upload failed." });
-      return res.status(500).json({ error: "Failed to upload to S3" });
-    }
+} catch (err) {
+  console.error("❌ S3 Upload Error:", err);
+  io.emit("upload-error", { error: "Upload failed." });
+  return res.status(500).json({ error: "Failed to upload to S3" });
+}
   });
 
   bb.on("error", (err) => {
