@@ -1,3 +1,4 @@
+// upload.js
 const AWS = require("aws-sdk");
 const busboy = require("busboy");
 const fs = require("fs");
@@ -27,6 +28,9 @@ const manualStreamUpload = (req, res, next) => {
 
   const bb = busboy({ headers: req.headers });
   const files = [];
+  const io = req.app.get("io");
+  let totalSize = 0;
+  let uploadedSize = 0;
 
   bb.on("file", (fieldname, file, filename) => {
     const key = `${Date.now()}-${filename}`;
@@ -35,7 +39,7 @@ const manualStreamUpload = (req, res, next) => {
       Key: key,
       Body: file,
       ContentType: req.headers['content-type'],
-    }).promise();
+    });
 
     const fileData = {
       originalname: filename,
@@ -45,7 +49,13 @@ const manualStreamUpload = (req, res, next) => {
       isS3: true,
     };
 
-    files.push(uploadStream.then(() => fileData));
+    const managedUpload = uploadStream.on("httpUploadProgress", (progress) => {
+      uploadedSize += progress.loaded;
+      const percent = Math.round((uploadedSize / contentLength) * 100);
+      io.emit("upload-progress", { filename, percent });
+    }).promise();
+
+    files.push(managedUpload.then(() => fileData));
   });
 
   bb.on("field", (fieldname, val) => {
@@ -69,12 +79,17 @@ const manualStreamUpload = (req, res, next) => {
         })
       );
 
+      io.emit("upload-complete", { message: "Upload completed." });
+
       next();
     } catch (err) {
       console.error("❌ S3 Upload Error:", err);
+      io.emit("upload-error", { error: "Upload failed." });
       return res.status(500).json({ error: "Failed to upload to S3" });
     }
   });
+
+  io.emit("upload-start", { message: "Upload started." });
 
   req.pipe(bb);
 };

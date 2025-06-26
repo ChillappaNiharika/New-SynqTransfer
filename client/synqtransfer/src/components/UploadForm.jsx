@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiUploadCloud, FiFolderPlus, FiCheckCircle, FiCopy, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_ENDPOINTS } from '../config/apiConfig';
+import { API_ENDPOINTS, SOCKET_URL } from '../config/apiConfig';
+import { io } from "socket.io-client";
+const socket = io(SOCKET_URL);
 
 const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [files, setFiles] = useState([]);
@@ -17,6 +19,10 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [copyText, setCopyText] = useState('Copy Link');
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+  socket.on("uploadProgress", (percent) => setProgress(percent));
+}, []);
 
   const handleSubmit = async () => {
   // Validation
@@ -40,7 +46,10 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   try {
     setLoading(true);
     const res = await axios.post(API_ENDPOINTS.UPLOADFILE, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: {
+        "Content-Type": "multipart/form-data",
+        "x-socket-id": socket.id
+      },
        timeout: 0,
       onUploadProgress: (progressEvent) => {
             const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);

@@ -5,6 +5,7 @@ const archiver = require("archiver");
 const fileService = require("../services/fileService");
 const emailService = require("../services/emailService");
 const { createShortLink } = require("../utils/shortener");
+const File = require("../models/File");
 
 const s3 = new AWS.S3();
 
