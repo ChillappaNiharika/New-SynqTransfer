@@ -21,7 +21,29 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-  socket.on("uploadProgress", (percent) => setProgress(percent));
+  socket.on("upload-progress", ({ percent }) => {
+    setProgress(percent);
+  });
+
+  socket.on("upload-complete", ({ filename, key, location }) => {
+    setLoading(false);
+    setShowSuccess(true);
+    setFileURL(location); // Set from S3 path
+    setProgress(0);
+    setError('');
+  });
+
+  socket.on("upload-error", ({ filename, error }) => {
+    setLoading(false);
+    setError(`❌ Upload failed: ${error}`);
+    setProgress(0);
+  });
+
+  return () => {
+    socket.off("upload-progress");
+    socket.off("upload-complete");
+    socket.off("upload-error");
+  };
 }, []);
 
   const handleSubmit = async () => {
@@ -51,11 +73,16 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
         "x-socket-id": socket.id
       },
        timeout: 0,
-      onUploadProgress: (progressEvent) => {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setProgress(percent);
-        }
-    });
+       validateStatus: function (status) {
+    return status >= 200 && status < 500; // treat 202 as valid
+  },
+       onUploadProgress: (progressEvent) => {
+    if (progressEvent.total) {
+      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      setProgress(percent);
+    }
+  }
+});
 
     console.log("✅ Upload response:", res.data); // Optional: debug
 
