@@ -64,6 +64,8 @@ const manualStreamUpload = (req, res, next) => {
   let buffer = Buffer.alloc(0);
   const parts = [];
 
+  const io = req.app.get("io");
+
   console.log(`📤 Starting multipart upload for: ${filename}`);
 
   try {
@@ -76,6 +78,9 @@ const manualStreamUpload = (req, res, next) => {
 
     const uploadId = multipart.UploadId;
     console.log(`🆔 Multipart Upload ID: ${uploadId}`);
+
+    // 🟢 Respond IMMEDIATELY to avoid Render timeout
+    res.status(202).json({ message: "Upload started. Progress will be reported via socket." });
 
     // Step 2: Upload parts manually as stream
     file.on("data", async (chunk) => {
@@ -90,61 +95,72 @@ const manualStreamUpload = (req, res, next) => {
 
         console.log(`⬆️ Uploading part ${partNumber} (${partBuffer.length} bytes)`);
 
-        const uploadedPart = await s3.uploadPart({
-          Bucket: process.env.S3_BUCKET,
-          Key: key,
-          UploadId: uploadId,
-          PartNumber: partNumber,
-          Body: partBuffer,
-        }).promise();
+        try {
+          const uploadedPart = await s3.uploadPart({
+            Bucket: process.env.S3_BUCKET,
+            Key: key,
+            UploadId: uploadId,
+            PartNumber: partNumber,
+            Body: partBuffer,
+          }).promise();
 
-        parts.push({ ETag: uploadedPart.ETag, PartNumber: partNumber });
-        console.log(`✅ Part ${partNumber} uploaded`);
+          parts.push({ ETag: uploadedPart.ETag, PartNumber: partNumber });
 
-        partNumber++;
+          const percent = Math.round((uploadedSize / contentLength) * 100);
+          io.emit("upload-progress", { filename, percent });
+
+          console.log(`✅ Part ${partNumber} uploaded (${percent}%)`);
+          partNumber++;
+        } catch (err) {
+          console.error(`❌ Failed to upload part ${partNumber}:`, err);
+          io.emit("upload-error", { filename, error: `Part ${partNumber} failed` });
+        }
+
         file.resume();
       }
     });
 
     file.on("end", async () => {
-      if (buffer.length > 0) {
-        console.log(`⬆️ Uploading final part ${partNumber} (${buffer.length} bytes)`);
+      try {
+        if (buffer.length > 0) {
+          console.log(`⬆️ Uploading final part ${partNumber} (${buffer.length} bytes)`);
 
-        const finalPart = await s3.uploadPart({
+          const finalPart = await s3.uploadPart({
+            Bucket: process.env.S3_BUCKET,
+            Key: key,
+            UploadId: uploadId,
+            PartNumber: partNumber,
+            Body: buffer,
+          }).promise();
+
+          parts.push({ ETag: finalPart.ETag, PartNumber: partNumber });
+          console.log(`✅ Final part ${partNumber} uploaded`);
+        }
+
+        // Step 3: Complete upload
+        await s3.completeMultipartUpload({
           Bucket: process.env.S3_BUCKET,
           Key: key,
           UploadId: uploadId,
-          PartNumber: partNumber,
-          Body: buffer,
+          MultipartUpload: { Parts: parts },
         }).promise();
 
-        parts.push({ ETag: finalPart.ETag, PartNumber: partNumber });
-        console.log(`✅ Final part ${partNumber} uploaded`);
+        io.emit("upload-complete", {
+          filename,
+          key,
+          location: `s3://${process.env.S3_BUCKET}/${key}`,
+        });
+
+        console.log(`🎉 Multipart upload complete for: ${filename}`);
+      } catch (err) {
+        console.error("❌ Finalization failed:", err);
+        io.emit("upload-error", { filename, error: "Finalization failed" });
       }
-
-      // Step 3: Complete upload
-      await s3.completeMultipartUpload({
-        Bucket: process.env.S3_BUCKET,
-        Key: key,
-        UploadId: uploadId,
-        MultipartUpload: { Parts: parts },
-      }).promise();
-
-      console.log(`🎉 Multipart upload complete for: ${filename}`);
-
-      req.files = req.files || [];
-      req.files.push({
-        originalname: filename,
-        key,
-        location: `s3://${process.env.S3_BUCKET}/${key}`,
-        size: uploadedSize,
-        isS3: true,
-      });
     });
 
   } catch (err) {
-    console.error("❌ Error in multipart upload:", err);
-    return res.status(500).json({ error: "Multipart upload failed" });
+    console.error("❌ Error in multipart upload setup:", err);
+    res.status(500).json({ error: "Multipart upload failed" });
   }
 });
 
