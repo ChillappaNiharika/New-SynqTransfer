@@ -74,8 +74,9 @@ const manualStreamUpload = (req, res, next) => {
     };
 
     const managedUpload = uploadStream.on("httpUploadProgress", (progress) => {
-      uploadedSize += progress.loaded;
-      const percent = Math.round((uploadedSize / contentLength) * 100);
+      const percent = progress.total
+      ? Math.round((progress.loaded / progress.total) * 100)
+      : Math.min(100, Math.round((progress.loaded / contentLength) * 100));
       console.log(`📈 Progress for ${filename}: ${percent}%`);
       io.emit("upload-progress", { filename, percent });
     }).promise();
