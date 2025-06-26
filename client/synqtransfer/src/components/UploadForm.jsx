@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FiUploadCloud, FiFolderPlus, FiCheckCircle, FiCopy, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_ENDPOINTS } from '../config/apiConfig';
+import { API_ENDPOINTS, WS_ENDPOINTS } from '../config/apiConfig';
 
 const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [files, setFiles] = useState([]);
@@ -19,7 +19,7 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [progress, setProgress] = useState(0);
 
   const uploadViaWebSocket = (file, metadata, onProgress, onSuccess, onError) => {
-  const socket = new WebSocket('ws://localhost:8183/ws/upload'); // Update to your backend address
+  const socket = new WebSocket(WS_ENDPOINTS.FILE_UPLOAD); // Update to your backend address
 
   let offset = 0;
   const CHUNK_SIZE = 1024 * 1024; // 1MB
