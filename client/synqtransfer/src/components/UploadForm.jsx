@@ -18,6 +18,65 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
 
+  const uploadViaWebSocket = (file, metadata, onProgress, onSuccess, onError) => {
+  const socket = new WebSocket('ws://localhost:8183/ws/upload'); // Update to your backend address
+
+  let offset = 0;
+  const CHUNK_SIZE = 1024 * 1024; // 1MB
+
+  socket.binaryType = 'arraybuffer';
+
+  socket.onopen = () => {
+    socket.send(JSON.stringify({ ...metadata, filename: file.name, size: file.size }));
+  };
+
+  socket.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === 'start') {
+      sendChunk();
+    }
+
+    if (msg.type === 'done') {
+      onSuccess(msg.uuid);
+      socket.close();
+    }
+
+    if (msg.type === 'error') {
+      onError(msg.error);
+      socket.close();
+    }
+  };
+
+  socket.onerror = (e) => {
+    onError('WebSocket error occurred.');
+  };
+
+  const sendChunk = () => {
+    if (offset >= file.size) {
+      socket.send(new Uint8Array()); // signal EOF
+      return;
+    }
+
+    const reader = new FileReader();
+    const nextSlice = file.slice(offset, offset + CHUNK_SIZE);
+
+    reader.onload = () => {
+      socket.send(reader.result);
+      offset += CHUNK_SIZE;
+      onProgress(Math.min(100, Math.round((offset * 100) / file.size)));
+      setTimeout(sendChunk, 0); // async next chunk
+    };
+
+    reader.onerror = () => {
+      onError('Failed to read file chunk.');
+      socket.close();
+    };
+
+    reader.readAsArrayBuffer(nextSlice);
+  };
+};
+
   const handleSubmit = async () => {
   // Validation
   if (!files || files.length === 0) {
@@ -27,6 +86,42 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
   if (!emailTo || !yourEmail || !title || !message)
     return setError('⚠️ All fields must be filled out to continue.');
 
+  const file = files[0]; // for simplicity, upload one file at a time
+  const largeFileThreshold = 2 * 1024 * 1024 * 1024; // 2GB
+
+  setLoading(true);
+  setProgress(0);
+  setError('');
+
+  const metadata = {
+    toEmail: emailTo,
+    fromEmail: yourEmail,
+    title,
+    message,
+    option,
+    forceS3: file.size > largeFileThreshold
+  };
+
+  // If file is large or user forces it, use WebSocket
+  if (file.size > largeFileThreshold) {
+    uploadViaWebSocket(
+      file,
+      metadata,
+      (percent) => setProgress(percent),
+      async (uuid) => {
+        const shortUrl = `${window.location.origin}/api/files/${uuid}`;
+        setFileURL(shortUrl);
+        setShowSuccess(true);
+        setLoading(false);
+        setProgress(0);
+      },
+      (errMsg) => {
+        setError(errMsg);
+        setLoading(false);
+        setProgress(0);
+      }
+    );
+  } else {
   const formData = new FormData();
   files.forEach((f) => {
   formData.append("files", f); // 'files' must match backend multer config
@@ -43,8 +138,8 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
       headers: { "Content-Type": "multipart/form-data" },
        timeout: 0,
       onUploadProgress: (progressEvent) => {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setProgress(percent);
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setProgress(percent);
         }
     });
 
@@ -60,6 +155,7 @@ const UploadForm = ({ setSubmitted, setLink, setStatus }) => {
     setError('❌ Upload failed. Please try again.');
     console.error(err);
     setProgress(0);
+  }
   }
 };
 
