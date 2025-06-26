@@ -11,6 +11,7 @@ AWS.config.update({
   region: process.env.AWS_REGION,
 });
 const s3 = new AWS.S3();
+AWS.config.logger = console;
 
 const manualStreamUpload = (req, res, next) => {
   const contentLength = parseInt(req.headers["content-length"] || "0");
@@ -73,15 +74,21 @@ const manualStreamUpload = (req, res, next) => {
       isS3: true,
     };
 
-    const managedUpload = uploadStream.on("httpUploadProgress", (progress) => {
-      const percent = progress.total
+    const managedUpload = uploadStream
+  .on("httpUploadProgress", (progress) => {
+    const percent = progress.total
       ? Math.round((progress.loaded / progress.total) * 100)
       : Math.min(100, Math.round((progress.loaded / contentLength) * 100));
-      console.log(`📈 Progress for ${filename}: ${percent}%`);
-      io.emit("upload-progress", { filename, percent });
-    }).promise();
+    console.log(`📈 Progress for ${filename}: ${percent}%`);
+    io.emit("upload-progress", { filename, percent });
+  })
+  .promise()
+  .catch((err) => {
+    console.error(`❌ Upload failed for ${filename}:`, err);
+    throw err; // rethrow to be caught in bb.on("finish")
+  });
 
-    files.push(managedUpload.then(() => fileData));
+files.push(managedUpload.then(() => fileData));
   });
 
   bb.on("field", (fieldname, val) => {
@@ -118,9 +125,10 @@ const manualStreamUpload = (req, res, next) => {
   });
 
   bb.on("error", (err) => {
-    console.error("❌ Busboy error:", err);
-    return res.status(500).json({ error: "Streaming parser error" });
-  });
+  console.error("❌ Busboy error:", err);
+  io.emit("upload-error", { error: "Streaming upload error." });
+  res.status(500).json({ error: "Streaming upload failed" });
+});
 
   io.emit("upload-start", { message: "Upload started." });
 
