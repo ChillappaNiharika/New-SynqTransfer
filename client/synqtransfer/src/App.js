@@ -8,6 +8,9 @@ import logo from './assets/Logo without text.png';
 import Terms from './pages/Terms';
 import Contact from './pages/Contact';
 import AboutUs from './pages/About';
+import CountHistory from "./pages/CountHistory";
+import CountMachinePage from "./pages/CountMachinePage";
+
 
 function App() {
   return (
@@ -33,6 +36,9 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/count-history" element={<CountHistory />} />
+          <Route path="/count-machine" element={<CountMachinePage />} />
+
         </Routes>
       </div>
     </Router>

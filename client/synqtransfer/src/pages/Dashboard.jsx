@@ -1,5 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from "react-router-dom";
+import CountMachine from "../components/CountMachine";
+
+
 
 const Dashboard = () => {
   return (
@@ -151,6 +155,62 @@ const Dashboard = () => {
           </p>
         </div>
       </section>
+
+      {/* Count Machine Info Section */}
+<section className="py-16 px-6 max-w-6xl mx-auto text-center">
+  <h2 className="text-3xl font-bold text-[#FFC93C] mb-6">
+    Smart Count Machine
+  </h2>
+
+  <p className="text-[#F9F9F9] mb-6 max-w-3xl mx-auto text-sm leading-relaxed">
+    Count Machine is an interactive tracking tool that allows you to increase and store counts securely 
+    without any login required. Simply enter your email or a unique ID and your counts will be saved 
+    automatically with a full history record.
+  </p>
+
+  <div className="grid md:grid-cols-3 gap-8 text-center mt-10">
+
+    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
+      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
+        No Login Required
+      </h3>
+      <p className="text-sm text-[#F9F9F9]">
+        Just use your email or unique ID — no signup, no password, no hassle.
+      </p>
+    </div>
+
+    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
+      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
+        Auto Save & History
+      </h3>
+      <p className="text-sm text-[#F9F9F9]">
+        Every click is stored securely along with timestamped history.
+      </p>
+    </div>
+
+    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
+      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
+        Fast & Lightweight
+      </h3>
+      <p className="text-sm text-[#F9F9F9]">
+        Works instantly with no delay and no heavy system usage.
+      </p>
+    </div>
+
+  </div>
+
+  <div className="mt-10">
+    <a
+      href="/count-machine"
+      className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition"
+    >
+      Open Count Machine
+    </a>
+  </div>
+</section>
+
+
+
 
       {/* Footer */}
       <footer className="bg-[#1A1A1A] text-center py-6 mt-12 text-sm text-[#7D7D7D]">

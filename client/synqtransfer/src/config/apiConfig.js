@@ -9,6 +9,9 @@ export const SOCKET_URL = BASE_URL.replace('/api', '');
 export const API_ENDPOINTS = {
   UPLOADFILE: `${BASE_URL}/files/upload`,
   CONTACT: `${BASE_URL}/contact`,
+  SIGNIN: `${BASE_URL}/users/signin`,
+  SAVE_SESSION: `${BASE_URL}/sessions/save`,
+  GET_HISTORY: `${BASE_URL}/sessions/history`,
 
 };
 

@@ -10,6 +10,8 @@ const shortenerRoutes = require("./routes/shortener");
 const cleanExpiredFiles = require("./services/cleanupService");
 const checkOrigin = require("./middlewares/originCheck");
 const contactRoutes = require('./routes/contactRoutes');
+const userRoutes = require("./routes/userRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
 const path = require('path');
 
 mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected"));
@@ -49,6 +51,8 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/files", fileRoutes);
 app.use("/", shortenerRoutes);
 app.use('/api', contactRoutes);
+app.use("/users", userRoutes);
+app.use("/sessions", sessionRoutes);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'templates'));
