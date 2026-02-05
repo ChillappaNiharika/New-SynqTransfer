@@ -135,12 +135,6 @@ const Dashboard = () => {
           ))}
 
         </div>
-
-        <div className="mt-12">
-          <a href="/count-machine" className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition">
-            Launch Count Machine
-          </a>
-        </div>
       </section>
 
       {/* ================= USE CASES ================= */}
@@ -202,18 +196,6 @@ const Dashboard = () => {
         <p className="max-w-2xl mx-auto text-sm text-[#F9F9F9] mb-10">
           Share files securely and track productivity smarter — all in one seamless platform.
         </p>
-
-        <div className="flex justify-center gap-6 flex-wrap">
-
-          <a href="/upload" className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition">
-            Transfer Files
-          </a>
-
-          <a href="/count-machine" className="border border-[#FF6F3C] text-[#FF6F3C] hover:bg-[#FF6F3C] hover:text-white px-8 py-3 rounded-lg font-semibold transition">
-            Track Sessions
-          </a>
-
-        </div>
       </section>
 
       {/* ================= FOOTER ================= */}
