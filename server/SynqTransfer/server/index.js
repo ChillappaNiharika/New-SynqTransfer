@@ -51,8 +51,9 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/files", fileRoutes);
 app.use("/", shortenerRoutes);
 app.use('/api', contactRoutes);
-app.use("/users", userRoutes);
-app.use("/sessions", sessionRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/sessions", sessionRoutes);
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'templates'));
