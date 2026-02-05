@@ -1,221 +1,553 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from "react-router-dom";
-import CountMachine from "../components/CountMachine";
-
-
 
 const Dashboard = () => {
   return (
     <div className="bg-[#0F0F0F] text-white font-sans">
-      {/* Hero Section */}
-      <section className="text-center py-16 px-4 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f]">
+
+      {/* ================= HERO ================= */}
+      <section className="text-center py-20 px-6 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f]">
+
         <motion.h1
           className="text-5xl font-bold text-[#FF6F3C] mb-4"
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          Fast & Secure File Transfers
+          SynqTransfer Platform
         </motion.h1>
+
         <motion.p
-          className="text-[#F9F9F9] text-lg max-w-2xl mx-auto"
+          className="text-[#F9F9F9] text-lg max-w-3xl mx-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          Send large files with confidence. SynqTransfer ensures your files are encrypted, tracked, and auto-expired for security.
+          A powerful ecosystem combining secure file transfers and smart productivity tools 
+          like the interactive Count Machine — all in one fast, lightweight platform.
         </motion.p>
-        <motion.div
-          className="mt-6"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
+
+        <div className="mt-8 flex justify-center gap-6 flex-wrap">
           <a
             href="/upload"
-            className="bg-[#FF6F3C] hover:bg-[#e55a24] text-white font-semibold px-6 py-3 rounded-lg transition-all"
+            className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition"
           >
-            Start Uploading
+            Start File Transfer
           </a>
-        </motion.div>
+
+          <a
+            href="/count-machine"
+            className="border border-[#FF6F3C] text-[#FF6F3C] hover:bg-[#FF6F3C] hover:text-white px-8 py-3 rounded-lg font-semibold transition"
+          >
+            Open Count Machine
+          </a>
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 px-6 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">Why SynqTransfer?</h2>
-        <div className="grid md:grid-cols-3 gap-8 text-center">
+      {/* ================= FILE TRANSFER FEATURES ================= */}
+      <section className="py-20 px-6 max-w-6xl mx-auto">
+
+        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-12">
+          Secure File Transfer System
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-10 text-center">
+
           {[
-            { title: '24-Hour Expiry', desc: 'All files expire automatically in 24 hours to ensure privacy.' },
-            { title: 'End-to-End Encryption', desc: 'We protect your data with the highest-grade encryption protocols.' },
-            { title: 'Link or Email', desc: 'Choose to generate a shareable link or directly send via email.' },
-            { title: 'Drag & Drop', desc: 'Easily drag files and folders to upload seamlessly.' },
-            { title: 'Progress Tracking', desc: 'Get real-time upload status with visual indicators.' },
-            { title: 'No Login Needed', desc: 'Send files instantly—no signup or login required.' },
+            {
+              title: "24-Hour Expiry",
+              desc: "Automatically deletes shared files after 24 hours ensuring maximum privacy."
+            },
+            {
+              title: "End-to-End Encryption",
+              desc: "Your files are encrypted using industry-grade protocols during upload and transfer."
+            },
+            {
+              title: "Link or Email Sharing",
+              desc: "Generate secure short links or send files directly through email."
+            },
+            {
+              title: "Drag & Drop Upload",
+              desc: "Simply drag your files into the browser to upload instantly."
+            },
+            {
+              title: "Live Progress Tracking",
+              desc: "Visual upload progress so you always know what's happening."
+            },
+            {
+              title: "No Login Needed",
+              desc: "Transfer files instantly without any signup process."
+            },
           ].map((item, i) => (
-            <motion.div
+            <div
               key={i}
               className="bg-[#1A1A1A] p-6 rounded-lg shadow hover:shadow-lg transition"
-              whileHover={{ scale: 1.05 }}
             >
-              <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">{item.title}</h3>
-              <p className="text-[#F9F9F9] text-sm">{item.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 bg-[#111] px-6">
-        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto text-center">
-          {[
-            { step: '1', title: 'Upload Files', desc: 'Choose your files or folders to upload securely.' },
-            { step: '2', title: 'Set Options', desc: 'Enter email details, message, and expiration duration.' },
-            { step: '3', title: 'Share or Send', desc: 'Generate a secure link or send via email instantly.' },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className="bg-[#1A1A1A] p-6 rounded-lg"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.2 }}
-              viewport={{ once: true }}
-            >
-              <div className="text-4xl font-bold text-[#FF6F3C] mb-2">{item.step}</div>
-              <h4 className="text-xl font-semibold mb-2">{item.title}</h4>
+              <h3 className="text-xl text-[#FF6F3C] mb-2">{item.title}</h3>
               <p className="text-sm text-[#F9F9F9]">{item.desc}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-16 px-6 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">Trusted by Creators and Teams</h2>
-        <div className="grid md:grid-cols-2 gap-12 text-[#F9F9F9]">
+      {/* ================= FILE TRANSFER HOW ================= */}
+      <section className="py-20 bg-[#111] px-6">
+
+        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-12">
+          How Secure File Transfer Works
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto text-center">
+
+          {[
+            { step: "1", title: "Upload", desc: "Choose or drag your files securely." },
+            { step: "2", title: "Configure", desc: "Set expiration time and email details." },
+            { step: "3", title: "Share", desc: "Send link or email instantly." },
+          ].map((item, i) => (
+            <div key={i} className="bg-[#1A1A1A] p-6 rounded-lg">
+
+              <div className="text-4xl font-bold text-[#FF6F3C] mb-3">
+                {item.step}
+              </div>
+
+              <h4 className="text-xl mb-2">{item.title}</h4>
+
+              <p className="text-sm text-[#F9F9F9]">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= COUNT MACHINE INTRO ================= */}
+      <section className="py-20 px-6 max-w-6xl mx-auto text-center">
+
+        <h2 className="text-3xl font-bold text-[#FFC93C] mb-6">
+          Smart Count Machine
+        </h2>
+
+        <p className="max-w-3xl mx-auto text-sm text-[#F9F9F9] leading-relaxed mb-12">
+          Smart Count Machine is a built-in productivity tool designed to track clicks, time, 
+          session performance and historical data — all without complex authentication.
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-10">
+
+          {[
+            {
+              title: "Guest Mode",
+              desc: "Start counting instantly without any account."
+            },
+            {
+              title: "Session Tracking",
+              desc: "Every session tracks time, speed, and performance."
+            },
+            {
+              title: "Cloud History",
+              desc: "Signed users get full database saved history."
+            },
+            {
+              title: "Live Stopwatch",
+              desc: "Measure time between each count precisely."
+            },
+            {
+              title: "Analog Clock",
+              desc: "Beautiful real-time clock for session visualization."
+            },
+            {
+              title: "Reset & Summary",
+              desc: "Reset anytime and see complete session summary."
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="bg-[#1A1A1A] p-6 rounded-lg shadow"
+            >
+              <h3 className="text-xl text-[#FF6F3C] mb-2">
+                {item.title}
+              </h3>
+              <p className="text-sm text-[#F9F9F9]">
+                {item.desc}
+              </p>
+            </div>
+          ))}
+
+        </div>
+
+        <div className="mt-12">
+          <a
+            href="/count-machine"
+            className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition"
+          >
+            Launch Count Machine
+          </a>
+        </div>
+      </section>
+
+      {/* ================= COUNT MACHINE USE CASES ================= */}
+      <section className="py-20 bg-[#111] px-6">
+
+        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-12">
+          Who Uses Count Machine?
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto text-sm text-[#F9F9F9]">
+
           <div>
             <p className="mb-4">
-              Whether you're a designer, developer, photographer, or corporate team—SynqTransfer is tailored to
-              streamline your file-sharing workflow.
+              Smart Count Machine is built for a wide range of productivity and tracking needs.
             </p>
-            <p className="mb-4">
-              Collaborate faster by sharing design prototypes, documents, or video edits without size constraints or
-              sign-ins.
-            </p>
+
             <p>
-              Focus on your work—we’ll handle the storage, delivery, and security.
+              From fitness sessions to coding experiments, it helps users understand time 
+              efficiency and repetition performance.
             </p>
           </div>
-          <div className="flex flex-col gap-6 justify-center">
-            <div className="bg-[#1A1A1A] p-5 rounded-lg shadow">
-              <p className="italic text-sm mb-2">“SynqTransfer made it effortless to send our project files to clients securely and on time.”</p>
-              <p className="text-[#FFC93C] font-semibold">— Niharika Chillappa., UI/UX Developer</p>
-            </div>
-            <div className="bg-[#1A1A1A] p-5 rounded-lg shadow">
-              <p className="italic text-sm mb-2">“We no longer worry about file size or email restrictions. It's simply drag, drop, and done.”</p>
-              <p className="text-[#FFC93C] font-semibold">— Ashish Yelisetty., Full Stack Developer</p>
-            </div>
-            <div className="bg-[#1A1A1A] p-5 rounded-lg shadow">
-              <p className="italic text-sm mb-2">“The 24-hour expiry keeps our legal docs secure and out of unwanted hands.”</p>
-              <p className="text-[#FFC93C] font-semibold">— Kashyap., Lawyer</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Educational SEO Section */}
-      <section className="py-16 px-6 max-w-6xl mx-auto text-[#F9F9F9]">
-        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">Learn More About File Transfer Security</h2>
-        <div className="space-y-6 text-sm leading-relaxed">
-          <p>
-            File transfer is a daily need in modern digital workspaces. From creative teams to enterprise-level
-            corporations, sending large files quickly and safely can make or break productivity.
-          </p>
-          <p>
-            SynqTransfer simplifies this with secure upload, instant sharing, and 24-hour expiry—all without
-            mandatory signups. Whether you're sending gigabytes of design files, confidential contracts, or personal
-            data, your content is encrypted and transient.
-          </p>
-          <p>
-            Using end-to-end encryption and industry-standard protocols, your data remains protected from
-            interception or leaks. In fact, many professionals trust SynqTransfer over traditional cloud drives
-            for quick, one-time delivery needs.
-          </p>
-          <p>
-            Avoid clutter, save time, and increase your efficiency with our no-login-required file sharing.
-          </p>
-          <ul className="list-disc pl-5">
-            <li>Perfect for remote teams and freelancers needing to share files securely.</li>
-            <li>Useful for legal firms, HR departments, and educators who value file expiry.</li>
-            <li>No need to worry about permanent storage—your data is cleared automatically.</li>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>Developers testing interactions</li>
+            <li>Students practicing tasks</li>
+            <li>Fitness reps tracking</li>
+            <li>Workflow experiments</li>
+            <li>Gamified challenges</li>
           </ul>
-          <p>
-            Have questions? Visit our Help Center or reach out via our contact form. Start your first upload today and experience the future of secure file sharing.
-          </p>
         </div>
       </section>
 
-      {/* Count Machine Info Section */}
-<section className="py-16 px-6 max-w-6xl mx-auto text-center">
-  <h2 className="text-3xl font-bold text-[#FFC93C] mb-6">
-    Smart Count Machine
-  </h2>
+      {/* ================= PLATFORM BENEFITS ================= */}
+      <section className="py-20 px-6 max-w-6xl mx-auto">
 
-  <p className="text-[#F9F9F9] mb-6 max-w-3xl mx-auto text-sm leading-relaxed">
-    Count Machine is an interactive tracking tool that allows you to increase and store counts securely 
-    without any login required. Simply enter your email or a unique ID and your counts will be saved 
-    automatically with a full history record.
-  </p>
+        <h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-12">
+          Why Choose SynqTransfer Platform?
+        </h2>
 
-  <div className="grid md:grid-cols-3 gap-8 text-center mt-10">
+        <div className="space-y-6 text-sm text-[#F9F9F9] leading-relaxed">
 
-    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
-      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
-        No Login Required
-      </h3>
-      <p className="text-sm text-[#F9F9F9]">
-        Just use your email or unique ID — no signup, no password, no hassle.
-      </p>
-    </div>
+          <p>
+            SynqTransfer is more than just a file sharing service. It’s a full productivity ecosystem 
+            combining secure transfers with intelligent tools.
+          </p>
 
-    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
-      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
-        Auto Save & History
-      </h3>
-      <p className="text-sm text-[#F9F9F9]">
-        Every click is stored securely along with timestamped history.
-      </p>
-    </div>
+          <p>
+            Whether you need fast file delivery or session-based tracking, everything runs on a 
+            lightweight and secure infrastructure.
+          </p>
 
-    <div className="bg-[#1A1A1A] p-6 rounded-lg shadow">
-      <h3 className="text-xl font-semibold text-[#FF6F3C] mb-2">
-        Fast & Lightweight
-      </h3>
-      <p className="text-sm text-[#F9F9F9]">
-        Works instantly with no delay and no heavy system usage.
-      </p>
-    </div>
+          <p>
+            No clutter. No permanent storage. Just fast, smart and safe operations.
+          </p>
 
-  </div>
+        </div>
+      </section>
 
-  <div className="mt-10">
-    <a
-      href="/count-machine"
-      className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition"
-    >
-      Open Count Machine
-    </a>
-  </div>
+      {/* ================= FINAL CTA ================= */}
+      <section className="py-20 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f] text-center px-6">
+
+        <h2 className="text-4xl font-bold text-[#FF6F3C] mb-6">
+          Start Using SynqTransfer Today
+        </h2>
+
+        <p className="max-w-2xl mx-auto text-sm text-[#F9F9F9] mb-10">
+          Transfer files securely or track productivity with Smart Count Machine — all in one place.
+        </p>
+
+        <div className="flex justify-center gap-6 flex-wrap">
+          <a
+            href="/upload"
+            className="bg-[#FF6F3C] hover:bg-[#e55a24] px-8 py-3 rounded-lg font-semibold transition"
+          >
+            Transfer Files
+          </a>
+
+          <a
+            href="/count-machine"
+            className="border border-[#FF6F3C] text-[#FF6F3C] hover:bg-[#FF6F3C] hover:text-white px-8 py-3 rounded-lg font-semibold transition"
+          >
+            Use Count Machine
+          </a>
+        </div>
+      </section>
+
+      <section className="text-center py-20 px-6 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f]">
+
+<motion.h1
+className="text-5xl font-bold text-[#FF6F3C] mb-4"
+initial={{ opacity: 0, y: -30 }}
+animate={{ opacity: 1, y: 0 }}
+transition={{ duration: 0.6 }}
+>
+SynqTransfer Platform
+</motion.h1>
+
+<p className="text-[#F9F9F9] text-lg max-w-3xl mx-auto">
+A complete digital platform combining secure file transfers with smart productivity tools like Count Machine.
+</p>
+
+<div className="mt-8 flex justify-center gap-6 flex-wrap">
+
+<a href="/upload" className="bg-[#FF6F3C] px-8 py-3 rounded-lg font-semibold">
+Start File Transfer
+</a>
+
+<a href="/count-machine" className="border border-[#FF6F3C] px-8 py-3 rounded-lg text-[#FF6F3C]">
+Open Count Machine
+</a>
+
+</div>
 </section>
 
+{/* ================================================= FILE TRANSFER OVERVIEW ================================================= */}
 
+<section className="py-20 px-6 max-w-6xl mx-auto">
 
+<h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">
+Secure File Transfer System
+</h2>
 
-      {/* Footer */}
-      <footer className="bg-[#1A1A1A] text-center py-6 mt-12 text-sm text-[#7D7D7D]">
-        © {new Date().getFullYear()} SynqTransfer. All rights reserved. | <a href="/privacy" >Privacy Policy</a> | <a href="/terms" >Terms and Conditions</a> | <a href="/contact" >ContactUs</a> | <a href="/about-us" >AboutUs</a>
+<p className="text-sm text-[#F9F9F9] mb-6">
+SynqTransfer is designed for speed, security and simplicity. It allows users to transfer large files instantly without registration.
+</p>
+
+<p className="text-sm text-[#F9F9F9] mb-6">
+Every transfer is encrypted and auto-expired, making it ideal for sensitive data exchange.
+</p>
+
+<p className="text-sm text-[#F9F9F9] mb-6">
+From freelancers to enterprises, SynqTransfer solves file sharing pain points.
+</p>
+
+</section>
+
+{/* ================================================= FILE TRANSFER FEATURES GRID ================================================= */}
+
+<section className="py-20 px-6 max-w-6xl mx-auto">
+
+<div className="grid md:grid-cols-3 gap-10">
+
+{[
+"24 Hour Expiry",
+"End to End Encryption",
+"Unlimited File Size",
+"Drag and Drop Upload",
+"Live Progress Tracking",
+"Short Secure Links",
+"Email Delivery",
+"No Login Required",
+"Cloud Storage",
+"Auto Cleanup",
+"Fast CDN Delivery",
+"Mobile Friendly"
+].map((item,i)=>(
+<div key={i} className="bg-[#1A1A1A] p-6 rounded-lg">
+<h3 className="text-[#FF6F3C] text-lg mb-2">{item}</h3>
+<p className="text-sm text-[#F9F9F9]">
+Feature designed for modern secure transfers and productivity.
+</p>
+</div>
+))}
+
+</div>
+
+</section>
+
+{/* ================================================= FILE TRANSFER USE CASES ================================================= */}
+
+<section className="py-20 bg-[#111] px-6">
+
+<h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">
+File Transfer Use Cases
+</h2>
+
+<div className="max-w-6xl mx-auto space-y-6 text-sm">
+
+<p>Design agencies sending large mockups.</p>
+<p>Developers sharing builds and archives.</p>
+<p>Students submitting assignments.</p>
+<p>Legal firms transferring contracts.</p>
+<p>Photographers delivering albums.</p>
+<p>Marketing teams sharing campaigns.</p>
+<p>HR sending onboarding files.</p>
+<p>Remote teams collaborating globally.</p>
+
+</div>
+
+</section>
+
+{/* ================================================= COUNT MACHINE INTRO ================================================= */}
+
+<section className="py-20 px-6 max-w-6xl mx-auto text-center">
+
+<h2 className="text-3xl font-bold text-[#FFC93C] mb-6">
+Smart Count Machine
+</h2>
+
+<p className="text-sm text-[#F9F9F9] max-w-3xl mx-auto mb-6">
+Count Machine is a real-time tracking tool that measures counts, time intervals, session summaries and history.
+</p>
+
+<p className="text-sm text-[#F9F9F9] max-w-3xl mx-auto mb-6">
+Users can use guest mode or sign in via email for permanent tracking.
+</p>
+
+<p className="text-sm text-[#F9F9F9] max-w-3xl mx-auto mb-6">
+It is built for speed, accuracy and simplicity.
+</p>
+
+</section>
+
+{/* ================================================= COUNT MACHINE FEATURES ================================================= */}
+
+<section className="py-20 px-6 max-w-6xl mx-auto">
+
+<div className="grid md:grid-cols-3 gap-10">
+
+{[
+"Live Stopwatch",
+"Analog Clock Display",
+"Session Summary",
+"Cloud History",
+"Email Based Login",
+"Unique ID System",
+"Fast Click Response",
+"Reset Button",
+"Performance Metrics",
+"Average Speed",
+"Total Duration",
+"Session Storage"
+].map((item,i)=>(
+<div key={i} className="bg-[#1A1A1A] p-6 rounded-lg">
+<h3 className="text-[#FF6F3C] mb-2">{item}</h3>
+<p className="text-sm text-[#F9F9F9]">
+Powerful built-in functionality for productivity tracking.
+</p>
+</div>
+))}
+
+</div>
+
+</section>
+
+{/* ================================================= COUNT MACHINE USE CASES ================================================= */}
+
+<section className="py-20 bg-[#111] px-6">
+
+<h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">
+Count Machine Use Cases
+</h2>
+
+<div className="max-w-6xl mx-auto space-y-6 text-sm">
+
+<p>Fitness repetition tracking.</p>
+<p>Study session productivity.</p>
+<p>Gamified challenges.</p>
+<p>Workflow testing.</p>
+<p>Speed measurement.</p>
+<p>Time based experiments.</p>
+<p>Learning tasks.</p>
+<p>Performance optimization.</p>
+
+</div>
+
+</section>
+
+{/* ================================================= EDUCATIONAL CONTENT ================================================= */}
+
+<section className="py-20 px-6 max-w-6xl mx-auto text-sm space-y-6">
+
+<h2 className="text-3xl font-bold text-center text-[#FFC93C] mb-10">
+Educational Guide
+</h2>
+
+<p>
+Modern digital workflows rely heavily on secure file sharing and productivity measurement tools.
+</p>
+
+<p>
+SynqTransfer solves the file sharing problem by providing a fast encrypted pipeline for data delivery.
+</p>
+
+<p>
+Count Machine complements this by offering insight into user activity and time usage.
+</p>
+
+<p>
+Together these tools create a complete digital productivity ecosystem.
+</p>
+
+<p>
+Security is the foundation of SynqTransfer while usability drives Count Machine.
+</p>
+
+<p>
+This platform removes friction in daily digital operations.
+</p>
+
+<p>
+Both systems are optimized for speed and reliability.
+</p>
+
+<p>
+Users enjoy seamless experience without complexity.
+</p>
+
+<p>
+No permanent data clutter.
+</p>
+
+<p>
+Everything is designed lightweight.
+</p>
+
+</section>
+
+{/* ================================================= EXPANDED SEO CONTENT (LOTS OF LINES) ================================================= */}
+
+<section className="py-20 px-6 max-w-6xl mx-auto text-sm space-y-4">
+
+{Array.from({length:150}).map((_,i)=>(
+<p key={i}>
+SynqTransfer platform improves digital productivity by combining secure file sharing and smart session tracking tools for modern workflows.
+</p>
+))}
+
+</section>
+
+{/* ================================================= CALL TO ACTION ================================================= */}
+
+<section className="py-20 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f] text-center px-6">
+
+<h2 className="text-4xl font-bold text-[#FF6F3C] mb-6">
+Start Using SynqTransfer Today
+</h2>
+
+<p className="text-sm text-[#F9F9F9] mb-8">
+Fast file transfers. Smart productivity tracking. One powerful platform.
+</p>
+
+<div className="flex justify-center gap-6 flex-wrap">
+
+<a href="/upload" className="bg-[#FF6F3C] px-8 py-3 rounded-lg font-semibold">
+Transfer Files
+</a>
+
+<a href="/count-machine" className="border border-[#FF6F3C] px-8 py-3 rounded-lg text-[#FF6F3C]">
+Use Count Machine
+</a>
+
+</div>
+
+</section>
+
+      {/* ================= FOOTER ================= */}
+      <footer className="bg-[#1A1A1A] text-center py-6 text-sm text-[#7D7D7D]">
+        © {new Date().getFullYear()} SynqTransfer. All rights reserved. |{" "}
+        <a href="/privacy">Privacy Policy</a> |{" "}
+        <a href="/terms">Terms & Conditions</a> |{" "}
+        <a href="/contact">ContactUs</a> |{" "}
+        <a href="/about-us">AboutUs</a>
       </footer>
+
     </div>
   );
 };

@@ -180,6 +180,20 @@ const handleEndSession = async () => {
   }
 };
 
+const handleReset = () => {
+  setCount(0);
+  setSessionStart(null);
+  setSessionEnd(null);
+  setShowSummary(false);
+  setStartTime(null);
+  setElapsed(0);
+
+  if (userId) {
+    localStorage.removeItem(`count-${userId}`);
+  }
+};
+
+
 
 
   /* ================= CLOCK ROTATION ================= */
@@ -300,6 +314,14 @@ const averageTime =
     End Session
   </button>
 )}
+
+<button
+  onClick={handleReset}
+  className="bg-red-600 hover:bg-red-500 w-full py-3 rounded-xl font-semibold transition mb-4"
+>
+  Reset Count
+</button>
+
 
 {showSummary && (
   <div className="bg-[#0F0F0F] border border-[#333] p-5 rounded-xl mt-4 text-sm space-y-2">
